@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 # project(OpenniCeshi)
 include_directories($ENV{OPEN_NI_INCLUDE} ${OpenCV_INCLUDE_DIRS})
 link_directories($ENV{OPEN_NI_LIB} ${OpenCV_LIB_DIR})
-file(GLOB SRC_OPENCV_CESHI openniCeshi.cpp)
-add_executable(OpenniCeshi ${SRC_OPENCV_CESHI})
+file(GLOB SRC_OPENNI_CESHI openniCeshi.cpp)
+add_executable(OpenniCeshi ${SRC_OPENNI_CESHI})
 target_link_libraries(OpenniCeshi ${OPENNI_LIBRARIES} ${OpenCV_LIBS})
 
 # ---------------proj 2

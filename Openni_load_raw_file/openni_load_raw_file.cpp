@@ -8,9 +8,12 @@
 #include <XnCppWrapper.h>
 #include <XnLog.h>
 #include <opencv2/opencv.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 using namespace std;
 using namespace cv;
+namespace fs = boost::filesystem;
 
 void checkOpenNIError(XnStatus rc, string status){
 	if(rc != XN_STATUS_OK)
@@ -18,29 +21,61 @@ void checkOpenNIError(XnStatus rc, string status){
 }//checkOpenNIError
 
 void main(){
-	cout<<"input raw file path:"<<endl;
-	const string default_fpath = "../../data/CapturedFrames/Image_0.raw";
-	string fpath;
+	cout<<"input raw file existing path:"<<endl;
+	const string default_dir = "../../data/CapturedFrames";
+	string fdir;
 	//cin>>fpath;
-	getline(cin, fpath);
-	if(fpath.size() == 0)
-		fpath = default_fpath;
-	cout<<fpath<<fpath.size()<<endl;
+	getline(cin, fdir);
+	if(fdir.size() == 0)
+		fdir = default_dir;
+	cout<<fdir<<fdir.size()<<endl;
+	fs::path boost_fdir = fdir;
+	fs::directory_iterator it(boost_fdir),
+		end_it;
 
 	XnStatus rc = XN_STATUS_OK;
+	while (it != end_it){
+		if(!(fs::is_regular_file(*it) && it->path().extension() == ".raw")){
+			cout<<"++"<<it->path()<<endl;
+			it++;
+			continue;
+		}
+		int sz = 1e7;
+		char *buf = new char[sz];
+		rc = xnOSLoadFile(it->path().string().c_str(), buf, sz);
+		//有 bug， 读取成功， 但是状态描述为 “Failed to read from the file!”
+		checkOpenNIError(rc, "xnOSLoadFile");
+		// 	if(rc != XN_STATUS_OK)
+		// 		return;
 
-	int sz = 1e7*3;
-	char *buf = new char[sz];
-	rc = xnOSLoadFile(fpath.c_str(), buf, sz);
-	//有 bug， 读取成功， 但是状态描述为 “Failed to read from the file!”
-	checkOpenNIError(rc, "xnOSLoadFile");
-// 	if(rc != XN_STATUS_OK)
-// 		return;
-	Mat im(480, 640, CV_8UC3, (void*)buf);
-	Mat im_show;
-	cvtColor(im, im_show, CV_RGB2BGR);
-	imshow("raw image", im_show);
-	cvWaitKey();
+		//fs::path fname = it->path().stem();
+		fs::path fpath = it->path();
+		fs::path fname = fpath.filename();
+		cout<<"--"<<fname<<endl;
+		if(boost::starts_with(fname.string(), "Image_")){
+			Mat im(480, 640, CV_8UC3, (void*)buf);
+			cvtColor(im, im, CV_RGB2BGR);
+			imshow(fname.string(), im);
+			imwrite(fpath.replace_extension(".jpg").string(), im);
+			cout<<fname<<endl;
+			cout<<fpath<<endl;
+		}
+		else if(boost::starts_with(fname.string(), "Depth_")){
+			Mat dm(480, 640, CV_16UC1, (void*)buf);
+			double dmin, dmax;
+			minMaxLoc(dm, &dmin, &dmax);
+			dm.convertTo(dm, CV_8U, 255./(dmax-dmin), -dmin*255./(dmax-dmin));
+			imshow(fname.string(), dm);
+			imwrite(fpath.replace_extension(".jpg").string(), dm);
+			cout<<fname<<endl;
+			cout<<fpath<<endl;
+		}
+
+		it++;
+	}
+
+
+	waitKey();
 	return;
 
 // 	//1.

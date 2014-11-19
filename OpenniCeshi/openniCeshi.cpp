@@ -21,6 +21,17 @@ void checkOpenNIError(XnStatus rc, string status){
 
 void main(){
 	cout<<"hello"<<endl;
+	string fn = "D:/Users/zhangxaochen/Desktop/1.jpg";
+	Mat img = imread(fn);
+	//imwrite("\\\\10.214.150.99\\public\\kinect fusion\\CapturedFrames_openNI132\\Image_4.jpg", img);
+	imwrite("d:\\Users\\zhangxaochen\\Desktop\\shit.jpg", img);
+// 	cout<<img.depth()<<", "<<img.channels()<<", "<<(int)img.data<<", "<<img.size()<<endl;
+// 	cvtColor(img, img, CV_RGB2GRAY);
+// 	cout<<img.depth()<<", "<<img.channels()<<", "<<(int)img.data<<", "<<img.size()<<endl;
+// 
+// 	imshow(fn, img);
+// 	waitKey();
+
 	//1.
 	XnStatus rc = XN_STATUS_OK;
 	xn::DepthMetaData depthMD;
@@ -51,9 +62,19 @@ void main(){
 	rc = dg.SetMapOutputMode(mapMode);
 	checkOpenNIError(rc, "SetMapOutputMode");
 
+	// 帧序号对齐：
+	if(dg.GetFrameSyncCap().CanFrameSyncWith(ig)){
+		dg.GetFrameSyncCap().FrameSyncWith(ig);
+		cout<<"dg.GetFrameSyncCap().CanFrameSyncWith(ig)"<<endl;
+	}
+	if(ig.GetFrameSyncCap().CanFrameSyncWith(dg)){
+		cout<<"--dg.GetFrameSyncCap().CanFrameSyncWith(ig)"<<endl;
+	}
+
 	//4. 两镜头切换视角，重要
-	//dg.GetAlternativeViewPointCap().SetViewPoint(ig);
-	//ig.GetAlternativeViewPointCap().SetViewPoint(dg);
+	bool vpIsIg = true;
+	dg.GetAlternativeViewPointCap().SetViewPoint(ig); //有效
+	//ig.GetAlternativeViewPointCap().SetViewPoint(dg);	//无效 ×
 
 	//5. read data
 	rc = ctx.StartGeneratingAll();
@@ -62,9 +83,13 @@ void main(){
 	rc = ctx.WaitNoneUpdateAll();
 
 	char key = 0;
-	while((key != 27 ) && !(rc = ctx.WaitNoneUpdateAll()) ){
+// 	while((key != 27 ) && !(rc = ctx.WaitNoneUpdateAll()) ){
+	while(key != 27 ){
+		ctx.WaitAnyUpdateAll();
+		//ctx.WaitNoneUpdateAll();
 		dg.GetMetaData(depthMD);
 		ig.GetMetaData(imageMD);
+		cout<<"dg.GetFrameID(): "<<dg.GetFrameID()<<", "<<ig.GetFrameID()<<endl;
 
 		//7.
 // 		Mat dm(depthMD.YRes(), depthMD.XRes(), CV_16UC1, (void*)depthMD.Data());
@@ -86,6 +111,15 @@ void main(){
 		imshow("color image", im_draw);
 
 		key = waitKey(1);
+		if(key == 'v'){
+			vpIsIg = !vpIsIg;
+
+			if (vpIsIg)
+				dg.GetAlternativeViewPointCap().SetViewPoint(ig);
+			else
+				dg.GetAlternativeViewPointCap().ResetViewPoint();
+		}
+
 	}//while
 
 	destroyAllWindows();

@@ -15,10 +15,17 @@ cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
 #---------------openni 
 set(OPENNI_LIBRARIES openNI.lib)
+
 #---------------opencv
 #http://docs.opencv.org/trunk/doc/tutorials/introduction/linux_gcc_cmake/linux_gcc_cmake.html
 set(OpenCV_DIR D:/opencv249/build)
 find_package(OpenCV REQUIRED)
+
+#---------------boost
+set(BOOST_ROOT "D:/Program Files/PCL 1.6.0-x86/3rdParty/Boost")
+find_package(Boost 1.49.0 REQUIRED)
+message(STATUS "--BOOST_ROOT is: ${BOOST_ROOT}")
+message(STATUS "--BOOST_ROOT is: ${BOOST_ROOT}")
 
 
 # ---------------top level:
